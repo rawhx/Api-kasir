@@ -1,16 +1,24 @@
 const express = require('express')
 require('dotenv').config()
 const { configDatabase } = require('./config');
+const middleware = require('./middleware');
+const bodyParser = require('body-parser');
+const { Auth } = require('./routes');
 
 const App = express()
 const PORT = process.env.PORT_API;
 
-App.get('/', async (req, res) => {
-    const db = await configDatabase()
-    const user = await db.collection('users')
-    const users = await user.findOne({user_nama: 'superAdmin'})
-    return res.json({
-        data: users
+App.use(bodyParser.json());
+App.use(bodyParser.urlencoded({ extended: false }));
+App.use(middleware.apiKey)
+
+App.use('/auth', Auth)
+
+App.use(middleware.authMiddleware)
+App.get('/', (req, res)=>{
+    const request = req.user
+    res.json({
+        data: request
     })
 })
 
@@ -18,4 +26,6 @@ App.listen(PORT, ()=>{
     console.log('====================================');
     console.log(`success running server in ${PORT}`)
     console.log('====================================');
+    // connect database
+    configDatabase()
 })
