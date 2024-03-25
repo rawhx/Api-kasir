@@ -4,6 +4,7 @@ const { configDatabase } = require('./config');
 const middleware = require('./middleware');
 const bodyParser = require('body-parser');
 const { Auth } = require('./routes');
+const Helper = require('./../Helpers/helper');
 
 const App = express()
 const PORT = process.env.PORT_API;
@@ -17,7 +18,7 @@ App.use('/auth', Auth)
 App.use(middleware.authMiddleware)
 App.get('/', (req, res)=>{
     const request = req.user
-    res.json({
+    Helper.Response(res, {
         data: request
     })
 })

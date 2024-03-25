@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const { user: UserModels } = require('./../models');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
+const Helper = require('../../Helpers/helper');
 require('dotenv').config();
 
 const Register = async (req, res) => {
@@ -10,24 +11,21 @@ const Register = async (req, res) => {
 
         const userFind = await UserModels.findOne({ user_email: request.user_email })
         if (!request.user_email || !validator.isEmail(request.user_email) || !request.user_password || !request.user_confirmPassword) {
-            return res.status(400).json({
-                error: true,
+            return Helper.ResponseError(res, {
                 code: 400,
                 message: 'Bad Request',
                 description: "Permintaan tidak dapat diproses karena ada data yang hilang atau tidak valid!"
             });
         } 
         if (userFind) {
-            return res.status(400).json({
-                error: true,
+            return Helper.ResponseError(res, {
                 code: 400,
                 message: 'Bad Request',
                 description: "Email sudah digunakan!"
             });
         }
         if (request.user_password !== request.user_confirmPassword) {
-            return res.status(400).json({
-                error: true,
+            return Helper.ResponseError(res, {
                 code: 400,
                 message: 'Bad Request',
                 description: "Kata sandi tidak sesuai!"
@@ -39,19 +37,13 @@ const Register = async (req, res) => {
 
         const user = new UserModels(payload)
         await user.save()
-        return res.json({
-            error: false,
-            code: 200,
+        return Helper.Response(res, {
             message: 'Registrasi Berhasil',
             description: 'Berhasil melakukan registrasi!',
             data: user
         })
     } catch (error) {
-        return res.status(500).json({
-            error: true,
-            code: 500,
-            message: 'Terjadi Kesalahan Server',
-            description: 'Permintaan tidak dapat diproses karena terjadi kesalahan pada server.',
+        return Helper.ResponseError(res, {
             errorMessage: error.message
         })
     }    
@@ -61,18 +53,16 @@ const Login = async (req, res) => {
     try {
         const { user_email, user_password } = req.body
         if (!user_email || !validator.isEmail(user_email) || !user_password) {
-            return res.status(400).json({
-                error: true,
+            return Helper.ResponseError(res, {
                 code: 400,
                 message: 'Bad Request',
                 description: "Permintaan tidak dapat diproses karena ada data yang hilang atau tidak valid!"
-            });
+            })
         } 
 
         const user = await UserModels.findOne({ user_email })
         if (!user) {
-            return res.status(401).json({ 
-                error: true,
+            return Helper.ResponseError(res, { 
                 code: 401,
                 message: 'Invalid Request',
                 description: 'Email tidak tersedia!',
@@ -80,8 +70,7 @@ const Login = async (req, res) => {
         }
         const passwordMatch = await bcrypt.compare(user_password, user.user_password);
         if (!passwordMatch) {
-            return res.status(401).json({ 
-                error: true,
+            return Helper.ResponseError(res, { 
                 code: 401,
                 message: 'Invalid Request',
                 description: 'kata sandi tidak sesuai!',
@@ -91,20 +80,14 @@ const Login = async (req, res) => {
         const key = process.env.API_KEY;
         const token = jwt.sign({ user_id: user._id, user_email: user.user_email }, key, { expiresIn: '3d' });
 
-        return res.json({
-            error: false,
-            code: 200,
+        return Helper.Response(res, {
             message: 'Login Berhasil',
             description: 'Berhasil login!',
             data: token
         })
         
     } catch (error) {
-        return res.status(500).json({
-            error: true,
-            code: 500,
-            message: 'Terjadi Kesalahan Server',
-            description: 'Permintaan tidak dapat diproses karena terjadi kesalahan pada server.',
+        return Helper.ResponseError(res, {
             errorMessage: error.message
         })
     }
