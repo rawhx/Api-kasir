@@ -10,31 +10,13 @@ const authMiddleware = (req, res, next) => {
 
         const key = process.env.API_KEY;
         // Memverifikasi token JWT
-        jwt.verify(tokenWithoutBearer, key, (err, decoded) => {
-            if (err) {
-                if (err.name === 'TokenExpiredError') {
-                    return res.status(401).json({
-                        error: true,
-                        code: 401,
-                        message: 'Unauthorized',
-                        description: 'Token telah kedaluwarsa!',
-                    })
-                } else {
-                    return res.status(401).json({
-                        error: true,
-                        code: 401,
-                        message: 'Unauthorized',
-                        description: 'Token tidak valid!',
-                    })
-                }
-            } else {
-                // Jika token valid, simpan informasi pengguna yang terdekripsi ke dalam objek req.user
-                req.user = decoded;
-                next(); // Lanjut ke middleware atau handler berikutnya
-            }
-        })
+        const decode = jwt.verify(tokenWithoutBearer, key)
+        req.user = decode
+        next()
     } catch (error) {
+        console.log('====================================');
         console.error('Error during authorization:', error);
+        console.log('====================================');
         return res.status(500).json({
             error: true,
             code: 500,
