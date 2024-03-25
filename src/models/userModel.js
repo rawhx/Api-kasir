@@ -9,7 +9,8 @@ const schema = new mongoose.Schema(
         user_created_at: { type: Date, default: Date.now },
         user_updated_at: { type: Date, default: null },
         user_deleted_at: { type: Date, default: null },
-    }
+    },
+    { versionKey: false }
 );
 
 module.exports = mongoose.model("users", schema);
