@@ -1,12 +1,16 @@
 const Helper = {
     Response: (res, data) => {
-        return res.json({
+        const response = {
             error: false,
             code: 200,
             message: data.message || 'Success',
             description: data.description || null,
             data: data.data || null
-        })
+        }
+        if(data.count) response.count = data.count 
+        if(data.page) response.page = data.page 
+        if(data.limit) response.limit = data.limit 
+        return res.json(response)
     },
 
     ResponseError: (res, data) => {
@@ -17,7 +21,7 @@ const Helper = {
             description: data.description || 'Permintaan tidak dapat diproses karena terjadi kesalahan pada server.',
         }
 
-        if (data.errorMessage) reponse.errorMessage = data.errorMessage
+        if (data.errorMessage) response.errorMessage = data.errorMessage
 
         return res.status( data.code || 500 ).json(response)
     }
