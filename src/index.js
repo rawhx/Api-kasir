@@ -3,7 +3,7 @@ require('dotenv').config()
 const { configDatabase } = require('./config');
 const middleware = require('./middleware');
 const bodyParser = require('body-parser');
-const { Auth, Barang } = require('./routes');
+const { Auth, Barang, Menu } = require('./routes');
 const Helper = require('./../Helpers/helper');
 
 const App = express()
@@ -16,6 +16,8 @@ App.use(middleware.apiKey)
 App.use('/auth', Auth)
 
 App.use(middleware.authMiddleware)
+
+App.use('/menu', Menu)
 
 App.use('/barang', Barang)
 
