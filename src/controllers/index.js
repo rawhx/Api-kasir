@@ -1,4 +1,5 @@
 module.exports = {
     AuthController: require('./AuthController'),
-    BarangController: require('./BarangController')
+    BarangController: require('./BarangController'),
+    KasirController: require('./KasirController'),
 }
