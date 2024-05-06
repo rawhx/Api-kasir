@@ -7,7 +7,7 @@ const Helper = {
             description: data.description || null,
             data: data.data || null
         }
-        if(data.count) response.count = data.count 
+        if(data.count || data.count == 0) response.count = data.count 
         if(data.page) response.page = data.page 
         if(data.limit) response.limit = data.limit 
         return res.json(response)
