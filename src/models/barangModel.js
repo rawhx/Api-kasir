@@ -4,6 +4,7 @@ const schema = new mongoose.Schema(
     {
         barang_nama: { type: String, unique: true },
         barang_harga: { type: Number },
+        barang_gambar: { type: String, default: null },
         barang_created_at: { type: Date, default: Date.now },
         barang_updated_at: { type: Date, default: null },
         barang_deleted_at: { type: Date, default: null },
