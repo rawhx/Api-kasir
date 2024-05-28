@@ -9,6 +9,13 @@ const Helper = require('./../Helpers/helper');
 const App = express()
 const PORT = process.env.PORT_API;
 
+App.get('/', (req, res)=>{
+    const request = req.user
+    Helper.Response(res, {
+        description: 'Welcome to API Chasier👋'
+    })
+})
+
 App.use(bodyParser.json());
 App.use(bodyParser.urlencoded({ extended: false }));
 App.use(middleware.apiKey)
@@ -24,13 +31,6 @@ App.use('/menu', Menu)
 App.use('/barang', Barang)
 
 App.use('/kasir', Kasir)
-
-App.get('/', (req, res)=>{
-    const request = req.user
-    Helper.Response(res, {
-        data: request
-    })
-})
 
 App.listen(PORT, ()=>{
     console.log('====================================');
