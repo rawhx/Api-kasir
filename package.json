@@ -6,7 +6,10 @@
   "scripts": {
     "start": "nodemon src/index.js"
   },
-  "author": "",
+  "author": {
+    "name": "rawhx",
+    "email": "achmadhasbil24@gmail.com" 
+  },
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.1.1",
