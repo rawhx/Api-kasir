@@ -1,5 +1,6 @@
 const Helper = require("../../Helpers/helper")
 const { barang } = require("../models")
+const fs = require('fs')
 
 const View = async (req, res) => {
     try {
@@ -7,15 +8,9 @@ const View = async (req, res) => {
         const find = { 
             barang_deleted_at: null 
         } 
-        if (barang_id) {
-            find._id = barang_id 
-        }
-        if (barang_nama) {
-            find.barang_nama = barang_nama 
-        }
-        if (barang_harga) {
-            find.barang_harga = barang_harga 
-        }
+        if (barang_id) find._id = barang_id 
+        if (barang_nama) find.barang_nama = barang_nama 
+        if (barang_harga) find.barang_harga = barang_harga 
         const limitt = parseInt(limit) || 10
         const pagee = parseInt(page) || 1
         const skip = (pagee - 1) * limitt
@@ -41,21 +36,31 @@ const Store = async (req, res) => {
         const request = req.body
         if (!request.barang_nama) {
             return Helper.ResponseError(res, {
-                code: 400,
+                code: 422,
                 message: 'Bad Request',
                 description: "nama barang wajib diisi!"
             })
         }
         if (!request.barang_harga) {
             return Helper.ResponseError(res, {
-                code: 400,
+                code: 422,
                 message: 'Bad Request',
                 description: "harga barang wajib diisi!"
+            })
+        }
+        if (!req.file) {
+            return Helper.ResponseError(res, {
+                code: 422,
+                message: 'Bad Request',
+                description: "gambar wajib diisi!"
             })
         }
 
         const barangFind = await barang.findOne({barang_nama: request.barang_nama})
         if (barangFind) {
+            if (req.file && fs.existsSync(req.file.path)) {
+                await fs.unlinkSync(req.file.path)
+            }
             return Helper.ResponseError(res, {
                 code: 400,
                 message: 'Bad Request',
@@ -65,7 +70,8 @@ const Store = async (req, res) => {
 
         const storeBarang = new barang({ 
             barang_nama: request.barang_nama, 
-            barang_harga: request.barang_harga 
+            barang_harga: request.barang_harga ,
+            barang_gambar: req.file.path
         })
         await storeBarang.save()
 
@@ -75,6 +81,9 @@ const Store = async (req, res) => {
             data: storeBarang
         })
     } catch (error) {
+        if (req.file && fs.existsSync(req.file.path)) {
+            await fs.unlinkSync(req.file.path)
+        }
         return Helper.ResponseError(res, {
             errorMessage: error.message
         })
@@ -84,19 +93,37 @@ const Store = async (req, res) => {
 const Update = async (req, res) => {
     try {
         const request = req.body
-        const barangFind = await barang.findOne({barang_nama: request.barang_nama})
-        if (barangFind && request.barang_id != barangFind._id) {
+        if (!request.barang_id) {
             return Helper.ResponseError(res, {
+                code: 422,
+                message: 'Bad Request',
+                description: "Id barang wajib diisi!"
+            })
+        }
+        const barangFind = await barang.findOne({barang_nama: request.barang_nama})
+        const barangFindId = await barang.findOne({_id: request.barang_id})
+        if (barangFind && (request.barang_id != barangFind._id)) {
+            if (req.file && fs.existsSync(req.file.path)) {
+                await fs.unlinkSync(req.file.path)
+            }
+            Helper.ResponseError(res, {
                 code: 400,
                 message: 'Bad Request',
                 description: "Nama barang sudah tersedia!"
             })
         }
+        let img = barangFindId.barang_gambar
+        if (barangFindId.barang_gambar && req.file) {
+            img = req.file.path
+            await fs.unlinkSync(barangFindId.barang_gambar)
+        }
+        if (barangFindId && !barangFindId.barang_gambar) Helper.ResponseError(res, { code: 400, message: 'Bad Request', description: "Gambar wajib diisi!"})
         const response = await barang.findOneAndUpdate(
             { _id: request.barang_id }, 
             {
                 barang_nama: request.barang_nama,
                 barang_harga: request.barang_harga,
+                barang_gambar: img,
                 barang_updated_at: new Date(),
             },
             { new: true }
@@ -107,6 +134,9 @@ const Update = async (req, res) => {
             data: response
         })
     } catch (error) {
+        if (req.file && fs.existsSync(req.file.path)) {
+            await fs.unlinkSync(req.file.path)
+        }
         return Helper.ResponseError(res, {
             errorMessage: error.message
         })
@@ -129,6 +159,9 @@ const Delete = async (req , res) => {
             await barang.deleteOne(
                 {_id: barang_id}
             )
+            if (barangFind.barang_gambar) {
+                await fs.unlinkSync(barangFind.barang_gambar)
+            }
             Helper.Response(res, {
                 message: 'Barang Berhasil Dihapus Permanen',
                 description: 'Berhasil menghapus barang secara permanen ',
