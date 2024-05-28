@@ -21,15 +21,15 @@ const View = async (req, res) => {
         const dataKasir = await kasir.find(find).sort({ kasir_created_at: 1 }).limit(limitt).skip(skip)
         const countKasir = await kasir.countDocuments({kasir_deleted_at: null}) || 0
 
-        dataKasir.forEach(async (data, key) => {
+        const dataa = await Promise.all(dataKasir.map(async (data) => {
             const detailBarang = await kasirDetail.find({ kasir_detail_kasir_id: data['_id'] });
-            dataKasir[key].kasir_detail_barang = detailBarang 
-        })
+            return { ...data.toObject(), kasir_detail_barang: detailBarang };
+        }));
 
         Helper.Response(res, {
             message: 'Transaksi Berhasil Ditemukan',
             description: 'Berhasil menemukan data transaksi',
-            data: dataKasir,
+            data: dataa,
             count: countKasir, 
             page: pagee,
             limit: limitt
