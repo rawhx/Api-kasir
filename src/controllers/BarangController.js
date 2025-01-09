@@ -48,13 +48,14 @@ const Store = async (req, res) => {
                 description: "harga barang wajib diisi!"
             })
         }
-        if (!req.file) {
-            return Helper.ResponseError(res, {
-                code: 422,
-                message: 'Bad Request',
-                description: "gambar wajib diisi!"
-            })
-        }
+        // if (!req.file) {
+        //     return Helper.ResponseError(res, {
+        //         code: 422,
+        //         message: 'Bad Request',
+        //         description: "gambar wajib diisi!"
+        //     })
+        // }
+
 
         const barangFind = await barang.findOne({barang_nama: request.barang_nama})
         if (barangFind) {
@@ -71,7 +72,7 @@ const Store = async (req, res) => {
         const storeBarang = new barang({ 
             barang_nama: request.barang_nama, 
             barang_harga: request.barang_harga ,
-            barang_gambar: req.file.path
+            barang_gambar: req.file  && req.file.path ? req.file.path : null
         })
         await storeBarang.save()
 
@@ -85,7 +86,7 @@ const Store = async (req, res) => {
             await fs.unlinkSync(req.file.path)
         }
         return Helper.ResponseError(res, {
-            errorMessage: error.message
+            errorMessage: error.message,
         })
     }
 }
@@ -117,7 +118,7 @@ const Update = async (req, res) => {
             img = req.file.path
             await fs.unlinkSync(barangFindId.barang_gambar)
         }
-        if (barangFindId && !barangFindId.barang_gambar) Helper.ResponseError(res, { code: 400, message: 'Bad Request', description: "Gambar wajib diisi!"})
+        // if (barangFindId && !barangFindId.barang_gambar) Helper.ResponseError(res, { code: 400, message: 'Bad Request', description: "Gambar wajib diisi!"})
         const response = await barang.findOneAndUpdate(
             { _id: request.barang_id }, 
             {
