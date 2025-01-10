@@ -58,18 +58,40 @@ const KalkulateDetailItem = async (data) => {
     }
 }
 
-const SaveDetail = (data, storeKasir) => {
-    data.forEach(async (element, key) => {
-        const {barang_harga} = await barang.findOne({_id: element['barang_id']})
-        const storeDetail = new kasirDetail({ 
-            kasir_detail_kasir_id: storeKasir["_id"],
-            kasir_detail_barang_id: element['barang_id'],
-            kasir_detail_qty: element["barang_total_harga"] ?  element["barang_total_harga"] / barang_harga : element['barang_qty'],
-            kasir_detail_harga: barang_harga,
-            kasir_detail_subtotal: element["barang_total_harga"] ?  element["barang_total_harga"] : element['barang_qty'] * barang_harga
+const SaveDetail = (data, storeKasir = null, jenis = 'save') => {
+    if(jenis == 'save') {
+        data.forEach(async (element, key) => {
+            const {barang_harga} = await barang.findOne({_id: element['barang_id']})
+            const storeDetail = new kasirDetail({ 
+                kasir_detail_kasir_id: storeKasir["_id"],
+                kasir_detail_barang_id: element['barang_id'],
+                kasir_detail_qty: element["barang_total_harga"] ?  element["barang_total_harga"] / barang_harga : element['barang_qty'],
+                kasir_detail_harga: barang_harga,
+                kasir_detail_subtotal: element["barang_total_harga"] ?  element["barang_total_harga"] : element['barang_qty'] * barang_harga
+            })
+            await storeDetail.save()
         })
-        await storeDetail.save()
-    })
+    } else {
+        let total_harga = 0;
+        let total_qty = 0;
+        data.forEach(async (element, key) => {
+            total_harga += element["barang_total_harga"] ? element["barang_total_harga"] : element['barang_qty'] * barang_harga
+            total_qty += element["barang_total_harga"] ? element["barang_total_harga"] / barang_harga : element['barang_qty']
+            const {barang_harga} = await barang.findOne({_id: element['barang_id']})
+            const storeDetail = await kasirDetail.findOneAndUpdate(
+                {
+                    kasir_detail_barang_id: element['barang_id']
+                },
+                {
+                    kasir_detail_qty: element["barang_total_harga"] ?  element["barang_total_harga"] / barang_harga : element['barang_qty'],
+                    kasir_detail_harga: barang_harga,
+                    kasir_detail_subtotal: element["barang_total_harga"] ?  element["barang_total_harga"] : element['barang_qty'] * barang_harga,
+                },
+                { new: true }
+            )
+        })
+        return { total_harga, total_qty }
+    }
 }
 
 const Store = async (req, res) => {
@@ -104,9 +126,31 @@ const Store = async (req, res) => {
     }
 }
 
-const Update = (req, res) => {
+const Update = async (req, res) => {
     try {
-        
+        const request = req.body
+        let kasirFind = await kasir.findOne({ _id: request.transaksi_id })
+        if(!kasirFind) {
+            Helper.ResponseError(res, {
+                message: 'Permintaan Tidak Ditemukan',
+                description: 'Data transaksi tidak tersedia',
+            })
+            return
+        }
+        const { total_harga, total_qty } = await SaveDetail(request.kasir_item, null, "update")
+        const transaksiUpdate = await kasir.findOneAndUpdate(
+            { _id: transaksi_id }, 
+            {
+                kasir_total_qty: total_qty,
+                kasir_total_harga: total_harga,
+                kasir_updated_at: new Date(),
+            },
+            { new: true },
+        )
+
+        Helper.Response(res, {
+            data: transaksiUpdate
+        })
     } catch (error) {
         Helper.ResponseError(res, {
             errorMessage: error
