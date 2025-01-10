@@ -41,6 +41,37 @@ const View = async (req, res) => {
     }
 }
 
+const KalkulateDetailItem = async (data) => {
+    try {
+        let total_harga = 0;
+        let total_qty = 0;
+        for (const element of data) {
+            const { barang_harga } = await barang.findOne({ _id: element['barang_id'] });
+            total_harga += element["barang_total_harga"] ? element["barang_total_harga"] : element['barang_qty'] * barang_harga
+            total_qty += element["barang_total_harga"] ? element["barang_total_harga"] / barang_harga : element['barang_qty']
+        }
+        return { total_harga, total_qty }
+    } catch (error) {
+        Helper.ResponseError(res, {
+            errorMessage: error
+        })
+    }
+}
+
+const SaveDetail = (data, storeKasir) => {
+    data.forEach(async (element, key) => {
+        const {barang_harga} = await barang.findOne({_id: element['barang_id']})
+        const storeDetail = new kasirDetail({ 
+            kasir_detail_kasir_id: storeKasir["_id"],
+            kasir_detail_barang_id: element['barang_id'],
+            kasir_detail_qty: element["barang_total_harga"] ?  element["barang_total_harga"] / barang_harga : element['barang_qty'],
+            kasir_detail_harga: barang_harga,
+            kasir_detail_subtotal: element["barang_total_harga"] ?  element["barang_total_harga"] : element['barang_qty'] * barang_harga
+        })
+        await storeDetail.save()
+    })
+}
+
 const Store = async (req, res) => {
     try {
         const request = req.body
@@ -52,24 +83,16 @@ const Store = async (req, res) => {
 
         let invoice = `EIT-${date.getDate() + '' + (date.getMonth() + 1) + '' + (date.getFullYear() % 100) + '' + (kasirFind + 1)}`
 
+        const { total_harga, total_qty } = await KalkulateDetailItem(request.kasir_item)
+
         const storeKasir = new kasir({ 
             kasir_kode_invoice: invoice,
-            kasir_total_qty: request.kasir_qty,
-            kasir_total_harga: request.kasir_total,
+            kasir_total_qty: total_qty,
+            kasir_total_harga: total_harga,
         })
         await storeKasir.save()
 
-        request.kasir_item.forEach(async (element, key) => {
-            const {barang_harga} = await barang.findOne({_id: element['barang_id']})
-            const storeDetail = new kasirDetail({ 
-                kasir_detail_kasir_id: storeKasir["_id"],
-                kasir_detail_barang_id: element['barang_id'],
-                kasir_detail_qty: element['barang_qty'],
-                kasir_detail_harga: barang_harga,
-                kasir_detail_subtotal: element['barang_qty'] * barang_harga
-            })
-            await storeDetail.save()
-        })
+        const saveDetail = await SaveDetail(request.kasir_item, storeKasir)
 
         Helper.Response(res, {
             data: request.kasir_item
